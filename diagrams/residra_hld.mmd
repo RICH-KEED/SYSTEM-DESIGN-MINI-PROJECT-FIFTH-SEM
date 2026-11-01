@@ -1,0 +1,14 @@
+flowchart LR
+    U[Student / Project Operator] --> UI[Web Console]
+    UI -->|HTTPS: create, inspect, cancel| API[FastAPI Control API]
+    API -->|transaction: run + outbox| PG[(PostgreSQL)]
+    PG -->|pending outbox rows| DISPATCH[Outbox Dispatcher]
+    DISPATCH[Outbox Dispatcher] -->|publish run_id| Q[(Redis Queue)]
+    PG -->|claim run / persist state| W[Python Worker]
+    Q -->|run_id notification| W
+    W -->|allow-listed tool calls| TOOLS[Tool Adapters]
+    W -->|events, checkpoints, result refs| PG
+    W -->|bounded artifacts| STORE[Artifact Store]
+    API -->|run state and events| UI
+    API -->|cancel request| PG
+    W -->|check cancellation between steps| PG
