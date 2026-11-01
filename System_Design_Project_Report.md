@@ -117,21 +117,21 @@ sequenceDiagram
     participant D as Outbox Dispatcher
     participant Q as Redis Queue
     participant W as Worker
-    User->>API: POST /v1/runs (idempotency key)
+    User->>API: Submit a run with an idempotency key
     API->>DB: Begin transaction, insert the run and outbox, commit
-    API-->>User: 202 {run_id, status: queued}
+    API-->>User: 202 Accepted with queued status and run ID
     D->>DB: read pending outbox
     D->>Q: publish run_id
     W->>Q: receive run_id
     W->>DB: conditional claim and event
     loop bounded steps
-      W->>DB: check cancel flag / persist checkpoint
+      W->>DB: check cancellation flag and persist checkpoint
       W->>W: call allowed tool with timeout
       W->>DB: append step event
     end
     W->>DB: save terminal status and result reference
-    User->>API: GET /v1/runs/{id}
-    API->>DB: verify owner; read state/events
+    User->>API: get run status and events
+    API->>DB: verify owner and read run state and events
     API-->>User: status and safe result summary
 ```
 
