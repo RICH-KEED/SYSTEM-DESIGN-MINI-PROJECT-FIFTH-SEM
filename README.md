@@ -118,12 +118,12 @@ sequenceDiagram
     participant Q as Redis Queue
     participant W as Worker
     User->>API: POST /v1/runs (idempotency key)
-    API->>DB: BEGIN; insert run + outbox; COMMIT
+    API->>DB: Begin transaction, insert the run and outbox, commit
     API-->>User: 202 {run_id, status: queued}
     D->>DB: read pending outbox
     D->>Q: publish run_id
     W->>Q: receive run_id
-    W->>DB: conditional claim + event
+    W->>DB: conditional claim and event
     loop bounded steps
       W->>DB: check cancel flag / persist checkpoint
       W->>W: call allowed tool with timeout
@@ -132,7 +132,7 @@ sequenceDiagram
     W->>DB: save terminal status and result reference
     User->>API: GET /v1/runs/{id}
     API->>DB: verify owner; read state/events
-    API-->>User: status + safe result summary
+    API-->>User: status and safe result summary
 ```
 
 ## 4. Interfaces and data
@@ -239,6 +239,4 @@ Potential next increments are server-sent event updates, per-project quotas, con
 - Redis. Lists data type.
 - OWASP. REST Security Cheat Sheet.
 - OpenTelemetry. Signals.
-
-
 
